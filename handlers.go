@@ -16,6 +16,12 @@ type createProductRequest struct {
 	Variants []Variant `json:"variants"`
 }
 
+type adjustStockRequest struct {
+	Mode  string `json:"mode"`
+	Delta int    `json:"delta"`
+	Stock int    `json:"stock"`
+}
+
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -135,5 +141,40 @@ func deleteProductHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "data": map[string]any{"id": id}})
+	}
+}
+
+func adjustStockHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.PathValue("id")
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		var req adjustStockRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		if req.Mode != "delta" && req.Mode != "set" {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"success": false, "error": "mode harus delta atau set"})
+			return
+		}
+		var next int
+		if req.Mode == "delta" {
+			next, err = AdjustStock(db, id, req.Delta, -1)
+		} else {
+			next, err = AdjustStock(db, id, 0, req.Stock)
+		}
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				writeJSON(w, http.StatusNotFound, map[string]any{"success": false, "error": "varian tidak ditemukan"})
+				return
+			}
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "data": map[string]any{"id": id, "stock": next}})
 	}
 }

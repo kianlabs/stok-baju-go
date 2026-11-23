@@ -186,3 +186,25 @@ func DeleteProduct(db *sql.DB, id int64) error {
 	}
 	return nil
 }
+
+func AdjustStock(db *sql.DB, variantID int64, delta int, setTo int) (int, error) {
+	var cur int
+	err := db.QueryRow("SELECT stock FROM product_variants WHERE id = ?", variantID).Scan(&cur)
+	if err != nil {
+		return 0, err
+	}
+	var next int
+	if setTo >= 0 {
+		next = setTo
+	} else {
+		next = cur + delta
+	}
+	if next < 0 {
+		next = 0
+	}
+	_, err = db.Exec("UPDATE product_variants SET stock = ? WHERE id = ?", next, variantID)
+	if err != nil {
+		return 0, err
+	}
+	return next, nil
+}
