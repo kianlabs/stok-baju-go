@@ -28,6 +28,9 @@ func main() {
 	mux.HandleFunc("PUT /api/products/{id}", updateProductHandler(db))
 	mux.HandleFunc("DELETE /api/products/{id}", deleteProductHandler(db))
 	mux.HandleFunc("PATCH /api/variants/{id}/stock", adjustStockHandler(db))
+	mux.HandleFunc("POST /api/upload", uploadImageHandler)
+	mux.HandleFunc("GET /api/uploads/{filename}", serveUploadHandler)
+
 	webFS, err := fs.Sub(webFiles, "web")
 	if err != nil {
 		log.Fatal(err)
