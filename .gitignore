@@ -1,0 +1,7 @@
+# Runtime data (jangan di-commit, rutin backup)
+data/
+*.db
+*.db-wal
+*.db-shm
+# Binary hasil build
+/stok-baju
