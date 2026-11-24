@@ -1,11 +1,232 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stok Baju</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 16px;
+        background: #f6f6f6;
+      }
+      h1 {
+        font-size: 24px;
+      }
+      input,
+      button {
+        font-size: 16px;
+        padding: 10px;
+      }
+      #grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 12px;
+        margin-top: 16px;
+      }
+      .card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 12px;
+      }
+      .card img {
+        width: 100%;
+        border-radius: 8px;
+      }
+      .card button {
+        padding: 8px 14px;
+      }
+    </style>
+  </head>
+  <body>
     <h1>Stok Baju</h1>
-</body>
+    <input id="search" type="search" placeholder="Cari baju..." />
+    <div id="filters">
+      <button data-filter="semua">Semua</button>
+      <button data-filter="tersedia">Tersedia</button>
+      <button data-filter="menipis">Menipis</button>
+      <button data-filter="habis">Habis</button>
+    </div>
+    <form id="addForm">
+      <input id="fName" type="text" placeholder="Nama baju" required />
+      <input id="fPrice" type="number" placeholder="Harga" min="0" required />
+      <input id="fPhoto" type="file" accept="image/*" />
+      <label><input id="fHasSizes" type="checkbox" /> Punya ukuran</label>
+      <input id="fSize" type="text" placeholder="Ukuran (misal S)" />
+      <input id="fStock" type="number" placeholder="Stok" min="0" value="0" />
+      <button type="submit">Tambah Produk</button>
+    </form>
+    <div id="grid"></div>
+    <p id="error"></p>
+    <script>
+      let allProducts = [];
+      let activeFilter = "semua";
+
+      function escapeHTML(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          }[c];
+        });
+      }
+
+      function rupiah(n) {
+        return "Rp " + Number(n).toLocaleString("id-ID");
+      }
+
+      function totalStock(p) {
+        return p.variants.reduce(function (a, v) {
+          return a + v.stock;
+        }, 0);
+      }
+
+      function statusOf(p) {
+        const t = totalStock(p);
+        if (t == 0) return "habis";
+        if (t <= 3) return "menipis";
+        return "tersedia";
+      }
+
+      async function loadProduct() {
+        try {
+          const res = await fetch("/api/products");
+          if (!res.ok) throw new Error("gagal load produk");
+          const body = await res.json();
+          const list = body.data || [];
+          allProducts = await Promise.all(
+            list.map(async function (p) {
+              const d = await fetch("/api/products/" + p.id);
+              const db = await d.json();
+              return { ...p, variants: db.data.variants || [] };
+            }),
+          );
+          document.getElementById("error").textContent = "";
+          render();
+        } catch (e) {
+          document.getElementById("error").textContent =
+            "Gagal load: " + e.message;
+        }
+      }
+
+      document
+        .getElementById("grid")
+        .addEventListener("click", async function (e) {
+          const del = e.target.closest("button[data-delete]");
+          if (del) {
+            const id = del.dataset.delete;
+            const res = await fetch("/api/products/" + id, {
+              method: "DELETE",
+            });
+            if (!res.ok) {
+              document.getElementById("error").textContent =
+                "Gagal hapus produk";
+              return;
+            }
+            loadProduct();
+            return;
+          }
+          const btn = e.target.closest("button[data-variant]");
+          if (!btn) return;
+          const id = btn.dataset.variant;
+          const delta = Number(btn.dataset.delta);
+          const res = await fetch("/api/variants/" + id + "/stock", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mode: "delta", delta: delta }),
+          });
+          if (!res.ok) {
+            document.getElementById("error").textContent = "Gagal ubah stok";
+            return;
+          }
+          loadProduct();
+        });
+
+      function render() {
+        const q = document.getElementById("search").value.toLowerCase();
+        const grid = document.getElementById("grid");
+        const items = allProducts.filter(function (p) {
+          if (q && !p.name.toLowerCase().includes(q)) return false;
+          if (activeFilter != "semua" && statusOf(p) != activeFilter)
+            return false;
+          return true;
+        });
+        grid.innerHTML = items
+          .map(function (p) {
+            const img = p.image_url
+              ? `<img src="${escapeHTML(p.image_url)}" alt="">`
+              : "";
+            const vars = p.variants
+              .map(function (v) {
+                const label = v.size_label
+                  ? escapeHTML(v.size_label)
+                  : "All Size";
+                return `<p>${label}: ${v.stock}  <button data-variant="${v.id}" data-delta="-1">-</button> <button data-variant="${v.id}" data-delta="1">+</button></p>`;
+              })
+              .join("");
+            return `<div class="card">${img}<h3>${escapeHTML(p.name)}</h3><p>${rupiah(p.price)}</p><p>Stok: ${totalStock(p)} (${statusOf(p)})</p>${vars}<button data-delete="${p.id}">Hapus</button></div>`;
+          })
+          .join("");
+      }
+      loadProduct();
+
+      document.getElementById("search").addEventListener("input", render);
+      document
+        .getElementById("filters")
+        .addEventListener("click", function (e) {
+          const btn = e.target.closest("button[data-filter]");
+          if (!btn) return;
+          activeFilter = btn.dataset.filter;
+          render();
+        });
+
+      document
+        .getElementById("addForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const name = document.getElementById("fName").value;
+          const price = Number(document.getElementById("fPrice").value);
+          const hasSizes = document.getElementById("fHasSizes").checked;
+          const size = document.getElementById("fSize").value;
+          const stock = Number(document.getElementById("fStock").value);
+          console.log(name, price, hasSizes, size, stock);
+          let imageURL = "";
+          const photoInput = document.getElementById("fPhoto");
+          if (photoInput.files.length > 0) {
+            const fd = new FormData();
+            fd.append("photo", photoInput.files[0]);
+            const up = await fetch("/api/upload", { method: "POST", body: fd });
+            if (!up.ok) {
+              document.getElementById("error").textContent =
+                "Gagal upload foto";
+              return;
+            }
+            const ub = await up.json();
+            imageURL = ub.data.url;
+          }
+          const res = await fetch("/api/products", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: name,
+              price: price,
+              image_url: imageURL,
+              has_sizes: hasSizes,
+              variants: [{ size_label: hasSizes ? size : null, stock: stock }],
+            }),
+          });
+          if (!res.ok) {
+            document.getElementById("error").textContent =
+              "Gagal tambah produk";
+            return;
+          }
+          document.getElementById("addForm").reset();
+          loadProduct();
+        });
+    </script>
+  </body>
 </html>
