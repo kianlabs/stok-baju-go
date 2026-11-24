@@ -1,67 +1,918 @@
 <!doctype html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
     <title>Stok Baju</title>
     <style>
+      /* ===== Dasar ===== */
       body {
-        font-family: sans-serif;
+        font-family: system-ui, sans-serif;
         margin: 0;
-        padding: 16px;
-        background: #f6f6f6;
+        background: #f4f4f5;
+        color: #09090b;
+      }
+      .shell {
+        max-width: 460px;
+        margin: 0 auto;
+        background: #fff;
+        min-height: 100vh;
+      }
+      button {
+        font-family: inherit;
+        cursor: pointer;
+      }
+
+      /* ===== Header ===== */
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        background: rgba(255, 255, 255, 0.95);
+        border-bottom: 1px solid #e4e4e7;
+        padding: 16px 16px 12px;
+      }
+      .head-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
       }
       h1 {
-        font-size: 24px;
+        font-size: 17px;
+        margin: 0;
       }
-      input,
-      button {
-        font-size: 16px;
+      .badge {
+        font-size: 10px;
+        border: 1px solid #e4e4e7;
+        border-radius: 20px;
+        padding: 2px 7px;
+        color: #52525b;
+      }
+      #summary {
+        font-size: 12px;
+        color: #71717a;
+        margin: 2px 0 0;
+      }
+      .btn-dark {
+        background: #09090b;
+        color: #fff;
+        border: none;
+        border-radius: 20px;
+        padding: 9px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .btn-ghost {
+        background: #fff;
+        color: #09090b;
+        border: 1px solid #e4e4e7;
+        border-radius: 12px;
+        padding: 9px 14px;
+        font-size: 12px;
+        font-weight: 500;
+      }
+      .btn-danger {
+        background: #dc2626;
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        padding: 9px 14px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      /* ===== Cari + toggle tampilan ===== */
+      .search-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      #search {
+        flex: 1;
+        min-width: 0;
+        box-sizing: border-box;
+        background: #f4f4f5;
+        border: none;
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+      .view-toggle {
+        display: flex;
+        background: #f4f4f5;
+        border-radius: 12px;
+        padding: 4px;
+        gap: 4px;
+      }
+      .view-btn {
+        border: none;
+        background: none;
+        border-radius: 8px;
+        padding: 0 10px;
+        font-size: 12px;
+        font-weight: 500;
+        color: #71717a;
+      }
+      .view-btn.active {
+        background: #fff;
+        color: #09090b;
+        font-weight: 600;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+
+      /* ===== Chip filter ===== */
+      #filters {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        margin-top: 10px;
+        scrollbar-width: none;
+      }
+      #filters::-webkit-scrollbar {
+        display: none;
+      }
+      #filters button {
+        flex-shrink: 0;
+        border: none;
+        border-radius: 20px;
+        padding: 6px 12px;
+        font-size: 12px;
+        background: #f4f4f5;
+        color: #52525b;
+      }
+      #filters button.active {
+        background: #09090b;
+        color: #fff;
+      }
+
+      /* ===== Daftar (mode list) ===== */
+      #grid {
+        display: block;
+      }
+      .row {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f4f4f5;
+      }
+      .row-top {
+        display: flex;
+        gap: 12px;
+      }
+      .thumb {
+        width: 64px;
+        height: 64px;
+        flex-shrink: 0;
+        border-radius: 12px;
+        background: #f4f4f5;
+        overflow: hidden;
+        border: none;
+        padding: 0;
+      }
+      .thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .row-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .row-name {
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .row-sub {
+        font-size: 11px;
+        color: #a1a1aa;
+        margin: 2px 0 0;
+      }
+      .row-price {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 6px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .row-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex-shrink: 0;
+      }
+      .dot {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        margin-right: 6px;
+      }
+      .dot-green {
+        background: #10b981;
+      }
+      .dot-amber {
+        background: #f59e0b;
+      }
+      .dot-red {
+        background: #ef4444;
+      }
+      .row-bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 12px;
+        gap: 8px;
+      }
+      .pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+      .pill {
+        border: 1px solid #e4e4e7;
+        background: #fff;
+        border-radius: 8px;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: 500;
+      }
+      .pill-on {
+        background: #09090b;
+        color: #fff;
+        border-color: #09090b;
+      }
+      .pill-zero {
+        background: #fef2f2;
+        color: #dc2626;
+        border-color: #fecaca;
+      }
+      .allsize {
+        background: #f4f4f5;
+        border-radius: 6px;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: 500;
+        color: #71717a;
+      }
+      .stepper {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid #e4e4e7;
+        border-radius: 8px;
+        background: #fff;
+        height: 32px;
+        flex-shrink: 0;
+      }
+      .stepper button {
+        width: 32px;
+        height: 100%;
+        border: none;
+        background: none;
+        font-size: 15px;
+      }
+      .stepper span {
+        min-width: 30px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .stepper .bulk-btn {
+        width: 32px;
+        border-left: 1px solid #e4e4e7;
+        font-size: 12px;
+        color: #71717a;
+      }
+      .mini-btn {
+        border: none;
+        background: none;
+        color: #a1a1aa;
+        font-size: 12px;
+        padding: 2px 4px;
+      }
+      .mini-btn.danger {
+        color: #dc2626;
+      }
+
+      /* ===== Kartu (mode grid) ===== */
+      #grid.grid-mode {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        padding: 16px;
+      }
+      .gcard {
+        border: 1px solid #e4e4e7;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #fff;
+      }
+      .gcard-photo {
+        position: relative;
+        aspect-ratio: 1 / 1;
+        background: #f4f4f5;
+        border: none;
+        padding: 0;
+        width: 100%;
+        display: block;
+      }
+      .gcard-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .gcard-badge {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 20px;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .gcard-body {
         padding: 10px;
       }
-      #grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-        gap: 12px;
-        margin-top: 16px;
+      .gcard-name {
+        font-size: 12px;
+        font-weight: 600;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
-      .card {
+      .gcard-price {
+        font-size: 12px;
+        font-weight: 500;
+        color: #71717a;
+        margin: 2px 0 0;
+      }
+      .gcard-foot {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid #f4f4f5;
+        margin-top: 8px;
+        padding-top: 8px;
+        font-size: 11px;
+        color: #a1a1aa;
+      }
+
+      /* ===== Kosong + error ===== */
+      #empty {
+        text-align: center;
+        padding: 64px 24px;
+      }
+      #empty p {
+        margin: 4px 0;
+        font-size: 14px;
+      }
+      #empty .sub {
+        font-size: 12px;
+        color: #71717a;
+      }
+      #error {
+        color: #dc2626;
+        font-size: 13px;
+        padding: 0 16px;
+      }
+
+      /* ===== Modal ===== */
+      .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        background: rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+      }
+      .modal[hidden] {
+        display: none;
+      }
+      .modal-card {
         background: #fff;
+        width: 100%;
+        max-width: 430px;
+        max-height: 90vh;
+        overflow-y: auto;
+        border-radius: 16px 16px 0 0;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .modal-card h2 {
+        font-size: 16px;
+        margin: 0 0 4px;
+      }
+      .modal-card .desc {
+        font-size: 12px;
+        color: #71717a;
+        margin: 0 0 16px;
+      }
+      .field {
+        margin-bottom: 14px;
+      }
+      .field > label {
+        display: block;
+        font-size: 12px;
+        font-weight: 500;
+        margin-bottom: 6px;
+      }
+      .field input[type="text"],
+      .field input[type="number"] {
+        width: 100%;
+        box-sizing: border-box;
+        height: 36px;
+        border: 1px solid #e4e4e7;
+        border-radius: 8px;
+        padding: 0 12px;
+        font-size: 14px;
+      }
+      .photo-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 14px;
+      }
+      .photo-preview {
+        width: 80px;
+        height: 80px;
+        flex-shrink: 0;
+        border-radius: 12px;
+        border: 1px dashed #d4d4d8;
+        background: #fafafa;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        color: #a1a1aa;
+        text-align: center;
+      }
+      .photo-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .switch-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .switch-row .label {
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .switch-row .hint {
+        font-size: 11px;
+        color: #71717a;
+        margin-top: 2px;
+      }
+      .size-box {
+        background: #fafafa;
         border-radius: 12px;
         padding: 12px;
+        margin-bottom: 14px;
       }
-      .card img {
-        width: 100%;
+      .preset-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 8px;
+      }
+      .preset-btn {
+        border: 1px solid #e4e4e7;
+        background: #fff;
         border-radius: 8px;
+        padding: 4px 10px;
+        font-size: 12px;
+        font-weight: 500;
       }
-      .card button {
-        padding: 8px 14px;
+      .preset-btn.on {
+        background: #09090b;
+        color: #fff;
+        border-color: #09090b;
+      }
+      .custom-row {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 8px;
+      }
+      .custom-row input {
+        flex: 1;
+        min-width: 0;
+        height: 32px;
+        border: 1px solid #e4e4e7;
+        border-radius: 8px;
+        padding: 0 10px;
+        font-size: 12px;
+        background: #fff;
+      }
+      .size-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .size-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #fff;
+        border: 1px solid #e4e4e7;
+        border-radius: 8px;
+        padding: 6px 10px;
+      }
+      .size-row .size-label {
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .size-row .qty-mini {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .qty-mini button {
+        width: 28px;
+        height: 28px;
+        border: none;
+        border-radius: 6px;
+        background: #f4f4f5;
+        font-size: 14px;
+      }
+      .qty-mini button.plus {
+        background: #09090b;
+        color: #fff;
+      }
+      .qty-mini input {
+        width: 48px;
+        height: 28px;
+        border: 1px solid #e4e4e7;
+        border-radius: 6px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .size-total {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #71717a;
+        margin-top: 10px;
+      }
+      .size-total b {
+        color: #09090b;
+      }
+      .modal-foot {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .modal-foot .btn-ghost {
+        flex: 1;
+      }
+      .modal-foot .btn-dark,
+      .modal-foot .btn-danger {
+        flex: 2;
+      }
+      .mode-toggle {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        background: #f4f4f5;
+        border-radius: 12px;
+        padding: 4px;
+        margin-bottom: 14px;
+      }
+      .mode-btn {
+        border: none;
+        background: none;
+        border-radius: 8px;
+        padding: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #71717a;
+      }
+      .mode-btn.active {
+        background: #09090b;
+        color: #fff;
+      }
+      .mode-btn.active.out {
+        background: #dc2626;
+      }
+      .adjust-line {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #71717a;
+        margin-bottom: 8px;
+      }
+      .adjust-line b {
+        color: #09090b;
+      }
+      #adjustQty {
+        width: 100%;
+        box-sizing: border-box;
+        height: 48px;
+        border: 1px solid #e4e4e7;
+        border-radius: 8px;
+        text-align: center;
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      .qty-presets {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+        margin-bottom: 14px;
+      }
+      .qty-presets button {
+        height: 32px;
+        border: 1px solid #e4e4e7;
+        background: #fff;
+        border-radius: 8px;
+        font-size: 12px;
+      }
+
+      /* ===== Toast ===== */
+      #toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 60;
+        width: calc(100% - 32px);
+        max-width: 420px;
+        box-sizing: border-box;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        background: #09090b;
+        color: #fff;
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-size: 12px;
+        font-weight: 500;
+      }
+      #toast[hidden] {
+        display: none;
+      }
+      #toastUndo {
+        border: none;
+        background: none;
+        color: #d4d4d8;
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: underline;
+        flex-shrink: 0;
       }
     </style>
   </head>
   <body>
-    <h1>Stok Baju</h1>
-    <input id="search" type="search" placeholder="Cari baju..." />
-    <div id="filters">
-      <button data-filter="semua">Semua</button>
-      <button data-filter="tersedia">Tersedia</button>
-      <button data-filter="menipis">Menipis</button>
-      <button data-filter="habis">Habis</button>
+    <div class="shell">
+      <header>
+        <div class="head-row">
+          <div>
+            <h1>Stok Gudang <span class="badge">● PWA</span></h1>
+            <p id="summary">0 pcs · 0 model baju</p>
+          </div>
+          <button class="btn-dark" id="addBtn" type="button">
+            + Tambah Stok
+          </button>
+        </div>
+        <div class="search-row">
+          <input
+            id="search"
+            type="search"
+            placeholder="Cari nama baju atau SKU..."
+          />
+          <div class="view-toggle">
+            <button id="viewList" class="view-btn active" type="button">
+              Daftar
+            </button>
+            <button id="viewGrid" class="view-btn" type="button">
+              Grid
+            </button>
+          </div>
+        </div>
+        <div id="filters">
+          <button data-filter="semua" class="active">Semua</button>
+          <button data-filter="tersedia">Tersedia</button>
+          <button data-filter="menipis">Menipis</button>
+          <button data-filter="habis">Habis</button>
+        </div>
+      </header>
+
+      <main>
+        <div id="grid"></div>
+        <div id="empty" hidden>
+          <p>Tidak ada stok ditemukan</p>
+          <p class="sub">Coba ubah filter atau tambahkan stok baju baru.</p>
+          <button class="btn-ghost" id="emptyAdd" type="button">
+            + Tambah Stok
+          </button>
+        </div>
+        <p id="error"></p>
+      </main>
     </div>
-    <form id="addForm">
-      <input id="fName" type="text" placeholder="Nama baju" required />
-      <input id="fPrice" type="number" placeholder="Harga" min="0" required />
-      <input id="fPhoto" type="file" accept="image/*" />
-      <label><input id="fHasSizes" type="checkbox" /> Punya ukuran</label>
-      <input id="fSize" type="text" placeholder="Ukuran (misal S)" />
-      <input id="fStock" type="number" placeholder="Stok" min="0" value="0" />
-      <button type="submit">Tambah Produk</button>
-    </form>
-    <div id="grid"></div>
-    <p id="error"></p>
+
+    <!-- Dialog tambah / edit produk -->
+    <div class="modal" id="formModal" hidden>
+      <div class="modal-card">
+        <h2 id="formTitle">Tambah Stok Baju</h2>
+        <p class="desc">Isi foto, harga, dan jumlah stok baju di gudang.</p>
+        <form id="addForm">
+          <div class="photo-row">
+            <div class="photo-preview" id="photoPreview">Belum ada foto</div>
+            <div>
+              <button class="btn-ghost" id="photoBtn" type="button">
+                Upload / Kamera
+              </button>
+              <input
+                id="fPhoto"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                hidden
+              />
+              <p class="desc" style="margin: 6px 0 0">
+                Foto otomatis dikompresi agar tetap ringan.
+              </p>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="fName">Nama Baju</label>
+            <input
+              id="fName"
+              type="text"
+              placeholder="Contoh: Kaos Oversize Katun Sage"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="fPrice">Harga (Rp)</label>
+            <input
+              id="fPrice"
+              type="number"
+              placeholder="89000"
+              min="0"
+              step="500"
+              required
+            />
+          </div>
+
+          <div class="switch-row">
+            <div>
+              <div class="label">Punya keterangan size?</div>
+              <div class="hint">Matikan jika hanya All Size / tanpa ukuran</div>
+            </div>
+            <input id="fHasSizes" type="checkbox" checked />
+          </div>
+
+          <div class="size-box" id="sizeBox">
+            <div class="preset-row" id="presetRow">
+              <button class="preset-btn" type="button" data-preset="XS">XS</button>
+              <button class="preset-btn" type="button" data-preset="S">S</button>
+              <button class="preset-btn" type="button" data-preset="M">M</button>
+              <button class="preset-btn" type="button" data-preset="L">L</button>
+              <button class="preset-btn" type="button" data-preset="XL">XL</button>
+              <button class="preset-btn" type="button" data-preset="XXL">XXL</button>
+            </div>
+            <div class="custom-row">
+              <input
+                id="customSize"
+                type="text"
+                placeholder="Size lain (mis. 28, 30, Jumbo)"
+              />
+              <button class="btn-ghost" id="customAdd" type="button">
+                Tambah
+              </button>
+            </div>
+            <div class="size-list" id="sizeList"></div>
+            <div class="size-total">
+              <span>Total semua size</span>
+              <b id="sizeTotal">0 pcs</b>
+            </div>
+          </div>
+
+          <div class="size-box" id="singleBox" hidden>
+            <div class="field" style="margin-bottom: 0">
+              <label for="fSingleStock">Jumlah Stok (All Size)</label>
+              <div class="qty-mini">
+                <button type="button" data-single="-1">−</button>
+                <input id="fSingleStock" type="number" min="0" value="0" />
+                <button type="button" class="plus" data-single="1">+</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-foot">
+            <button class="btn-ghost" id="formCancel" type="button">
+              Batal
+            </button>
+            <button class="btn-dark" type="submit">Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Dialog atur stok banyak -->
+    <div class="modal" id="adjustModal" hidden>
+      <div class="modal-card">
+        <h2>Atur Jumlah Stok</h2>
+        <p class="desc" id="adjustName"></p>
+        <div class="preset-row" id="adjustSizes" style="margin-bottom: 14px"></div>
+        <div class="mode-toggle">
+          <button class="mode-btn active" id="modeIn" type="button">
+            + Tambah Stok
+          </button>
+          <button class="mode-btn" id="modeOut" type="button">
+            − Kurangi Stok
+          </button>
+        </div>
+        <div class="adjust-line">
+          <span>Saat ini: <b id="adjustCurrent">0 pcs</b></span>
+          <span>Hasil: <b id="adjustResult">0 pcs</b></span>
+        </div>
+        <input id="adjustQty" type="number" min="1" value="5" />
+        <div class="qty-presets">
+          <button type="button" data-qty="1">1</button>
+          <button type="button" data-qty="5">5</button>
+          <button type="button" data-qty="10">10</button>
+          <button type="button" data-qty="25">25</button>
+        </div>
+        <div class="modal-foot">
+          <button class="btn-ghost" id="adjustCancel" type="button">
+            Batal
+          </button>
+          <button class="btn-dark" id="adjustApply" type="button">
+            Terapkan Perubahan
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dialog konfirmasi hapus -->
+    <div class="modal" id="deleteModal" hidden>
+      <div class="modal-card">
+        <h2>Hapus Stok?</h2>
+        <p class="desc" id="deleteName"></p>
+        <div class="modal-foot">
+          <button class="btn-ghost" id="deleteCancel" type="button">
+            Batal
+          </button>
+          <button class="btn-danger" id="deleteConfirm" type="button">
+            Hapus
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" hidden>
+      <span id="toastMsg"></span>
+      <button id="toastUndo" type="button">Urungkan</button>
+    </div>
+
     <script>
+      // ================= State =================
       let allProducts = [];
       let activeFilter = "semua";
+      let selectedSize = {};
+      let viewMode = "list";
+
+      // Form tambah / edit
+      let editingId = null;
+      let formSizes = [];
+      let formPhoto = "";
+      let formPhotoFile = null;
+
+      // Dialog atur stok banyak
+      let adjustProduct = null;
+      let adjustSize = null;
+      let adjustMode = "masuk";
+
+      // Dialog hapus
+      let deleteTarget = null;
+
+      // Toast
+      let toastTimer = null;
+
+      // ================= Helper kecil =================
+      function $(id) {
+        return document.getElementById(id);
+      }
 
       function escapeHTML(s) {
         return String(s).replace(/[&<>"']/g, function (c) {
@@ -88,8 +939,39 @@
       function statusOf(p) {
         const t = totalStock(p);
         if (t == 0) return "habis";
-        if (t <= 3) return "menipis";
+        if (t <= 5) return "menipis";
         return "tersedia";
+      }
+
+      function dotClass(p) {
+        const t = totalStock(p);
+        if (t == 0) return "dot-red";
+        if (t <= 5) return "dot-amber";
+        return "dot-green";
+      }
+
+      function showError(msg) {
+        $("error").textContent = msg;
+      }
+
+      function clearError() {
+        $("error").textContent = "";
+      }
+
+      // ================= API =================
+      async function apiJSON(url, method, body) {
+        const res = await fetch(url, {
+          method: method,
+          headers: { "Content-Type": "application/json" },
+          body: body ? JSON.stringify(body) : undefined,
+        });
+        const data = await res.json().catch(function () {
+          return {};
+        });
+        if (!res.ok) {
+          throw new Error((data && data.error) || "request gagal");
+        }
+        return data;
       }
 
       async function loadProduct() {
@@ -105,128 +987,780 @@
               return { ...p, variants: db.data.variants || [] };
             }),
           );
-          document.getElementById("error").textContent = "";
+          clearError();
           render();
         } catch (e) {
-          document.getElementById("error").textContent =
-            "Gagal load: " + e.message;
+          showError("Gagal load: " + e.message);
         }
       }
 
-      document
-        .getElementById("grid")
-        .addEventListener("click", async function (e) {
-          const del = e.target.closest("button[data-delete]");
-          if (del) {
-            const id = del.dataset.delete;
-            const res = await fetch("/api/products/" + id, {
-              method: "DELETE",
-            });
-            if (!res.ok) {
-              document.getElementById("error").textContent =
-                "Gagal hapus produk";
-              return;
-            }
-            loadProduct();
-            return;
-          }
-          const btn = e.target.closest("button[data-variant]");
-          if (!btn) return;
-          const id = btn.dataset.variant;
-          const delta = Number(btn.dataset.delta);
-          const res = await fetch("/api/variants/" + id + "/stock", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ mode: "delta", delta: delta }),
-          });
-          if (!res.ok) {
-            document.getElementById("error").textContent = "Gagal ubah stok";
-            return;
-          }
-          loadProduct();
+      // Foto dari HP dikompresi dulu (maks 400px, JPEG 0.82)
+      // supaya upload ringan dan tidak mentok batas 5 MB.
+      function compressImage(file) {
+        return new Promise(function (resolve) {
+          const reader = new FileReader();
+          reader.onerror = function () {
+            resolve(file);
+          };
+          reader.onload = function (ev) {
+            const img = new Image();
+            img.onerror = function () {
+              resolve(file);
+            };
+            img.onload = function () {
+              let w = img.width;
+              let h = img.height;
+              const max = 400;
+              if (w > h && w > max) {
+                h = Math.round((h * max) / w);
+                w = max;
+              } else if (h >= w && h > max) {
+                w = Math.round((w * max) / h);
+                h = max;
+              }
+              const canvas = document.createElement("canvas");
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext("2d");
+              if (!ctx) {
+                resolve(file);
+                return;
+              }
+              ctx.drawImage(img, 0, 0, w, h);
+              canvas.toBlob(function (blob) {
+                resolve(blob || file);
+              }, "image/jpeg", 0.82);
+            };
+            img.src = String(ev.target.result || "");
+          };
+          reader.readAsDataURL(file);
         });
+      }
 
+      async function uploadPhoto(file) {
+        const small = await compressImage(file);
+        const fd = new FormData();
+        fd.append("photo", small, "photo.jpg");
+        const up = await fetch("/api/upload", {
+          method: "POST",
+          body: fd,
+        });
+        if (!up.ok) throw new Error("gagal upload foto");
+        const ub = await up.json();
+        return ub.data.url;
+      }
+
+      async function patchStock(variantId, delta) {
+        const body = await apiJSON("/api/variants/" + variantId + "/stock", "PATCH", {
+          mode: "delta",
+          delta: delta,
+        });
+        return body.data;
+      }
+
+      function findVariant(variantId) {
+        for (const p of allProducts) {
+          for (const v of p.variants) {
+            if (v.id == variantId) return { product: p, variant: v };
+          }
+        }
+        return null;
+      }
+
+      // ================= Pilihan ukuran aktif =================
+      function pickedSize(p) {
+        const saved = selectedSize[p.id];
+        if (saved) {
+          const ok = p.variants.some(function (v) {
+            return v.size_label == saved;
+          });
+          if (ok) return saved;
+        }
+        const first = p.variants[0];
+        return first ? first.size_label : null;
+      }
+
+      function activeVariant(p) {
+        const picked = pickedSize(p);
+        return (
+          p.variants.find(function (v) {
+            return v.size_label == picked;
+          }) || p.variants[0]
+        );
+      }
+
+      // ================= Template HTML =================
+      // Satu fungsi = satu potong tampilan. Masing-masing
+      // mengembalikan string HTML, render() tinggal menyusunnya.
+
+      function subHTML(p) {
+        const parts = [];
+        if (p.category) parts.push(escapeHTML(p.category));
+        if (p.sku) parts.push(escapeHTML(p.sku));
+        if (parts.length == 0) return "";
+        return `<p class="row-sub">${parts.join(" · ")}</p>`;
+      }
+
+      function pillsHTML(p) {
+        if (!p.has_sizes) {
+          return `<span class="allsize">All Size</span>`;
+        }
+        const picked = pickedSize(p);
+        const buttons = p.variants
+          .map(function (v) {
+            const label = escapeHTML(v.size_label);
+            let cls = "pill";
+            if (v.size_label == picked) cls += " pill-on";
+            else if (v.stock == 0) cls += " pill-zero";
+            return (
+              `<button class="${cls}" type="button" ` +
+              `data-product="${p.id}" data-size="${label}">` +
+              `${label} ${v.stock}</button>`
+            );
+          })
+          .join("");
+        return `<div class="pills">${buttons}</div>`;
+      }
+
+      function stepperHTML(p) {
+        const active = activeVariant(p);
+        if (!active) return "";
+        const label = active.size_label || "";
+        return `
+          <div class="stepper">
+            <button type="button"
+              data-variant="${active.id}" data-delta="-1">-</button>
+            <span>${active.stock}</span>
+            <button type="button"
+              data-variant="${active.id}" data-delta="1">+</button>
+            <button type="button" class="bulk-btn" title="Atur banyak"
+              data-adjust="${p.id}" data-size="${escapeHTML(label)}">±</button>
+          </div>`;
+      }
+
+      function rowHTML(p) {
+        const total = totalStock(p);
+        return `
+          <div class="row">
+            <div class="row-top">
+              <button class="thumb" type="button"
+                data-edit="${p.id}" title="Edit">
+                ${p.image_url
+                  ? `<img src="${escapeHTML(p.image_url)}" alt="">`
+                  : ""}
+              </button>
+              <div class="row-info">
+                <h3 class="row-name">${escapeHTML(p.name)}</h3>
+                ${subHTML(p)}
+                <div class="row-price">
+                  <span>${rupiah(p.price)}</span>
+                  <span>
+                    <span class="dot ${dotClass(p)}"></span>${total} pcs
+                  </span>
+                </div>
+              </div>
+              <div class="row-actions">
+                <button class="mini-btn" type="button"
+                  data-edit="${p.id}">Edit</button>
+                <button class="mini-btn danger" type="button"
+                  data-delete="${p.id}">Hapus</button>
+              </div>
+            </div>
+            <div class="row-bottom">
+              ${pillsHTML(p)}
+              ${stepperHTML(p)}
+            </div>
+          </div>`;
+      }
+
+      function gridCardHTML(p) {
+        const total = totalStock(p);
+        const sizes = p.has_sizes
+          ? p.variants.map(function (v) {
+              return v.size_label;
+            }).join(" · ")
+          : "All Size";
+        const firstLabel = p.variants[0] ? p.variants[0].size_label || "" : "";
+        return `
+          <div class="gcard">
+            <button class="gcard-photo" type="button"
+              data-adjust="${p.id}" data-size="${escapeHTML(firstLabel)}">
+              ${p.image_url
+                ? `<img src="${escapeHTML(p.image_url)}" alt="">`
+                : ""}
+              <span class="gcard-badge">
+                <span class="dot ${dotClass(p)}"></span>${total}
+              </span>
+            </button>
+            <div class="gcard-body">
+              <h3 class="gcard-name">${escapeHTML(p.name)}</h3>
+              <p class="gcard-price">${rupiah(p.price)}</p>
+              <div class="gcard-foot">
+                <span>${escapeHTML(sizes)}</span>
+                <button class="mini-btn danger" type="button"
+                  data-delete="${p.id}">Hapus</button>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      // ================= Render =================
       function render() {
-        const q = document.getElementById("search").value.toLowerCase();
-        const grid = document.getElementById("grid");
+        const q = $("search").value.toLowerCase();
+        const grid = $("grid");
         const items = allProducts.filter(function (p) {
-          if (q && !p.name.toLowerCase().includes(q)) return false;
-          if (activeFilter != "semua" && statusOf(p) != activeFilter)
+          const hay = p.name + " " + (p.sku || "");
+          if (q && !hay.toLowerCase().includes(q)) return false;
+          if (activeFilter != "semua" && statusOf(p) != activeFilter) {
             return false;
+          }
           return true;
         });
+
+        grid.classList.toggle("grid-mode", viewMode == "grid");
         grid.innerHTML = items
           .map(function (p) {
-            const img = p.image_url
-              ? `<img src="${escapeHTML(p.image_url)}" alt="">`
-              : "";
-            const vars = p.variants
-              .map(function (v) {
-                const label = v.size_label
-                  ? escapeHTML(v.size_label)
-                  : "All Size";
-                return `<p>${label}: ${v.stock}  <button data-variant="${v.id}" data-delta="-1">-</button> <button data-variant="${v.id}" data-delta="1">+</button></p>`;
-              })
-              .join("");
-            return `<div class="card">${img}<h3>${escapeHTML(p.name)}</h3><p>${rupiah(p.price)}</p><p>Stok: ${totalStock(p)} (${statusOf(p)})</p>${vars}<button data-delete="${p.id}">Hapus</button></div>`;
+            return viewMode == "grid" ? gridCardHTML(p) : rowHTML(p);
+          })
+          .join("");
+
+        const totalPcs = allProducts.reduce(function (a, p) {
+          return a + totalStock(p);
+        }, 0);
+        $("summary").textContent =
+          totalPcs + " pcs · " + allProducts.length + " model baju";
+        $("empty").hidden = items.length != 0;
+
+        const lowCount = allProducts.filter(function (p) {
+          return statusOf(p) == "menipis";
+        }).length;
+        const emptyCount = allProducts.filter(function (p) {
+          return statusOf(p) == "habis";
+        }).length;
+        setChipLabel("menipis", "Menipis", lowCount);
+        setChipLabel("habis", "Habis", emptyCount);
+      }
+
+      function setChipLabel(filter, label, count) {
+        const btn = document.querySelector(
+          '#filters button[data-filter="' + filter + '"]',
+        );
+        if (!btn) return;
+        btn.textContent = label + (count > 0 ? " (" + count + ")" : "");
+      }
+
+      // ================= Toast =================
+      function showToast(msg, undoFn) {
+        $("toastMsg").textContent = msg;
+        $("toastUndo").style.display = undoFn ? "" : "none";
+        $("toast").hidden = false;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(hideToast, 4000);
+        $("toastUndo").onclick = function () {
+          hideToast();
+          if (undoFn) undoFn();
+        };
+      }
+
+      function hideToast() {
+        $("toast").hidden = true;
+        clearTimeout(toastTimer);
+      }
+
+      // ================= Dialog tambah / edit =================
+      function openForm(product) {
+        editingId = product ? product.id : null;
+        $("formTitle").textContent = product
+          ? "Edit Stok Baju"
+          : "Tambah Stok Baju";
+        $("fName").value = product ? product.name : "";
+        $("fPrice").value = product ? product.price : "";
+        $("fHasSizes").checked = product ? product.has_sizes : true;
+        formPhoto = product ? product.image_url || "" : "";
+        formPhotoFile = null;
+        $("fPhoto").value = "";
+        if (product && product.has_sizes) {
+          formSizes = product.variants.map(function (v) {
+            return { label: v.size_label, qty: v.stock };
+          });
+        } else if (product) {
+          formSizes = [];
+          $("fSingleStock").value = product.variants[0]
+            ? product.variants[0].stock
+            : 0;
+        } else {
+          formSizes = [
+            { label: "S", qty: 0 },
+            { label: "M", qty: 0 },
+            { label: "L", qty: 0 },
+            { label: "XL", qty: 0 },
+          ];
+          $("fSingleStock").value = 0;
+        }
+        renderPhotoPreview();
+        renderSizeEditor();
+        syncSizeBox();
+        clearError();
+        $("formModal").hidden = false;
+      }
+
+      function closeForm() {
+        $("formModal").hidden = true;
+      }
+
+      function renderPhotoPreview() {
+        const box = $("photoPreview");
+        if (formPhotoFile) {
+          box.innerHTML = `<img src="${URL.createObjectURL(formPhotoFile)}" alt="">`;
+        } else if (formPhoto) {
+          box.innerHTML = `<img src="${escapeHTML(formPhoto)}" alt="">`;
+        } else {
+          box.textContent = "Belum ada foto";
+        }
+      }
+
+      function syncSizeBox() {
+        const hasSizes = $("fHasSizes").checked;
+        $("sizeBox").hidden = !hasSizes;
+        $("singleBox").hidden = hasSizes;
+      }
+
+      function sizeRowHTML(s, i) {
+        return `
+          <div class="size-row">
+            <span class="size-label">${escapeHTML(s.label)}</span>
+            <div class="qty-mini">
+              <button type="button"
+                data-size-idx="${i}" data-size-delta="-1">−</button>
+              <input type="number" min="0" value="${s.qty}"
+                data-size-input="${i}" />
+              <button type="button" class="plus"
+                data-size-idx="${i}" data-size-delta="1">+</button>
+              <button type="button" class="mini-btn danger"
+                data-size-remove="${i}">✕</button>
+            </div>
+          </div>`;
+      }
+
+      function renderSizeEditor() {
+        $("sizeList").innerHTML = formSizes
+          .map(function (s, i) {
+            return sizeRowHTML(s, i);
+          })
+          .join("");
+        const total = formSizes.reduce(function (a, s) {
+          return a + (Number(s.qty) || 0);
+        }, 0);
+        $("sizeTotal").textContent = total + " pcs";
+        document.querySelectorAll("#presetRow .preset-btn").forEach(function (b) {
+          const on = formSizes.some(function (s) {
+            return s.label == b.dataset.preset;
+          });
+          b.classList.toggle("on", on);
+        });
+      }
+
+      function togglePreset(label) {
+        const i = formSizes.findIndex(function (s) {
+          return s.label == label;
+        });
+        if (i >= 0) formSizes.splice(i, 1);
+        else formSizes.push({ label: label, qty: 0 });
+        renderSizeEditor();
+      }
+
+      function addCustomSize() {
+        const val = $("customSize").value.trim();
+        if (!val) return;
+        const exists = formSizes.some(function (s) {
+          return s.label.toLowerCase() == val.toLowerCase();
+        });
+        if (!exists) formSizes.push({ label: val, qty: 0 });
+        $("customSize").value = "";
+        renderSizeEditor();
+      }
+
+      async function submitForm(e) {
+        e.preventDefault();
+        const name = $("fName").value.trim();
+        const price = Number($("fPrice").value);
+        const hasSizes = $("fHasSizes").checked;
+        if (!name) {
+          showError("Nama baju wajib diisi.");
+          return;
+        }
+        if (hasSizes && formSizes.length == 0) {
+          showError("Pilih minimal 1 ukuran atau matikan opsi size.");
+          return;
+        }
+        let imageURL = formPhoto;
+        if (formPhotoFile) {
+          try {
+            imageURL = await uploadPhoto(formPhotoFile);
+          } catch (err) {
+            showError("Gagal upload foto.");
+            return;
+          }
+        }
+        const variants = hasSizes
+          ? formSizes.map(function (s) {
+              return {
+                size_label: s.label,
+                stock: Math.max(0, Number(s.qty) || 0),
+              };
+            })
+          : [
+              {
+                size_label: null,
+                stock: Math.max(0, Number($("fSingleStock").value) || 0),
+              },
+            ];
+        const payload = {
+          name: name,
+          price: Math.max(0, price || 0),
+          image_url: imageURL,
+          has_sizes: hasSizes,
+          variants: variants,
+        };
+        try {
+          if (editingId) {
+            await apiJSON("/api/products/" + editingId, "PUT", payload);
+            showToast('"' + name + '" diperbarui.');
+          } else {
+            await apiJSON("/api/products", "POST", payload);
+            showToast('"' + name + '" ditambahkan ke gudang.');
+          }
+          closeForm();
+          loadProduct();
+        } catch (err) {
+          showError("Gagal simpan produk.");
+        }
+      }
+
+      // ================= Dialog atur stok banyak =================
+      function openAdjust(productId, sizeLabel) {
+        adjustProduct = allProducts.find(function (p) {
+          return p.id == productId;
+        });
+        if (!adjustProduct) return;
+        adjustSize = sizeLabel || null;
+        if (adjustProduct.has_sizes && !adjustSize) {
+          adjustSize = adjustProduct.variants[0]
+            ? adjustProduct.variants[0].size_label
+            : null;
+        }
+        adjustMode = "masuk";
+        $("adjustQty").value = 5;
+        $("adjustName").textContent = adjustProduct.name;
+        renderAdjustSizes();
+        syncAdjustMode();
+        updateAdjustPreview();
+        $("adjustModal").hidden = false;
+      }
+
+      function closeAdjust() {
+        $("adjustModal").hidden = true;
+      }
+
+      function adjustVariant() {
+        if (!adjustProduct) return null;
+        if (!adjustProduct.has_sizes) return adjustProduct.variants[0];
+        return adjustProduct.variants.find(function (v) {
+          return v.size_label == adjustSize;
+        });
+      }
+
+      function renderAdjustSizes() {
+        const box = $("adjustSizes");
+        if (!adjustProduct.has_sizes) {
+          box.innerHTML = `<span class="allsize">All Size</span>`;
+          return;
+        }
+        box.innerHTML = adjustProduct.variants
+          .map(function (v) {
+            const on = v.size_label == adjustSize;
+            return (
+              `<button type="button" class="preset-btn${on ? " on" : ""}" ` +
+              `data-adjust-size="${escapeHTML(v.size_label)}">` +
+              `${escapeHTML(v.size_label)} (${v.stock})</button>`
+            );
           })
           .join("");
       }
-      loadProduct();
 
-      document.getElementById("search").addEventListener("input", render);
-      document
-        .getElementById("filters")
-        .addEventListener("click", function (e) {
-          const btn = e.target.closest("button[data-filter]");
-          if (!btn) return;
-          activeFilter = btn.dataset.filter;
-          render();
-        });
+      function syncAdjustMode() {
+        $("modeIn").classList.toggle("active", adjustMode == "masuk");
+        $("modeOut").classList.toggle("active", adjustMode == "keluar");
+        $("modeOut").classList.toggle("out", adjustMode == "keluar");
+      }
 
-      document
-        .getElementById("addForm")
-        .addEventListener("submit", async function (e) {
-          e.preventDefault();
-          const name = document.getElementById("fName").value;
-          const price = Number(document.getElementById("fPrice").value);
-          const hasSizes = document.getElementById("fHasSizes").checked;
-          const size = document.getElementById("fSize").value;
-          const stock = Number(document.getElementById("fStock").value);
-          console.log(name, price, hasSizes, size, stock);
-          let imageURL = "";
-          const photoInput = document.getElementById("fPhoto");
-          if (photoInput.files.length > 0) {
-            const fd = new FormData();
-            fd.append("photo", photoInput.files[0]);
-            const up = await fetch("/api/upload", { method: "POST", body: fd });
-            if (!up.ok) {
-              document.getElementById("error").textContent =
-                "Gagal upload foto";
-              return;
-            }
-            const ub = await up.json();
-            imageURL = ub.data.url;
-          }
-          const res = await fetch("/api/products", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              name: name,
-              price: price,
-              image_url: imageURL,
-              has_sizes: hasSizes,
-              variants: [{ size_label: hasSizes ? size : null, stock: stock }],
-            }),
+      function updateAdjustPreview() {
+        const v = adjustVariant();
+        const cur = v ? v.stock : 0;
+        const qty = Math.max(0, Number($("adjustQty").value) || 0);
+        const result =
+          adjustMode == "masuk" ? cur + qty : Math.max(0, cur - qty);
+        $("adjustCurrent").textContent = cur + " pcs";
+        $("adjustResult").textContent = result + " pcs";
+      }
+
+      async function applyAdjust() {
+        const v = adjustVariant();
+        if (!v) return;
+        const qty = Math.max(1, Number($("adjustQty").value) || 0);
+        const delta = adjustMode == "masuk" ? qty : -qty;
+        try {
+          await patchStock(v.id, delta);
+          closeAdjust();
+          const name = adjustProduct.name;
+          const label = v.size_label ? " (" + v.size_label + ")" : "";
+          showToast(name + label + ": " + (delta > 0 ? "+" : "") + delta, function () {
+            patchStock(v.id, -delta).then(loadProduct);
+            showToast("Perubahan dibatalkan.");
           });
-          if (!res.ok) {
-            document.getElementById("error").textContent =
-              "Gagal tambah produk";
-            return;
-          }
-          document.getElementById("addForm").reset();
           loadProduct();
+        } catch (err) {
+          showError("Gagal ubah stok.");
+        }
+      }
+
+      // ================= Dialog hapus =================
+      function openDelete(product) {
+        deleteTarget = product;
+        $("deleteName").textContent =
+          'Stok baju "' + product.name + '" akan dihapus dari daftar gudang.';
+        $("deleteModal").hidden = false;
+      }
+
+      function closeDelete() {
+        $("deleteModal").hidden = true;
+      }
+
+      async function confirmDelete() {
+        if (!deleteTarget) return;
+        const gone = deleteTarget;
+        const snapshot = {
+          name: gone.name,
+          price: gone.price,
+          image_url: gone.image_url || "",
+          has_sizes: gone.has_sizes,
+          variants: gone.variants.map(function (v) {
+            return { size_label: v.size_label, stock: v.stock };
+          }),
+        };
+        try {
+          await fetch("/api/products/" + gone.id, { method: "DELETE" });
+          closeDelete();
+          showToast('"' + gone.name + '" dihapus.', function () {
+            apiJSON("/api/products", "POST", snapshot)
+              .then(loadProduct)
+              .catch(function () {
+                showError("Gagal mengembalikan produk.");
+              });
+            showToast("Produk dikembalikan.");
+          });
+          loadProduct();
+        } catch (err) {
+          showError("Gagal hapus produk.");
+        }
+      }
+
+      // ================= Event: daftar produk =================
+      $("grid").addEventListener("click", async function (e) {
+        const pill = e.target.closest("button[data-product]");
+        if (pill) {
+          selectedSize[pill.dataset.product] = pill.dataset.size;
+          render();
+          return;
+        }
+        const editBtn = e.target.closest("button[data-edit]");
+        if (editBtn) {
+          const p = allProducts.find(function (x) {
+            return x.id == editBtn.dataset.edit;
+          });
+          if (p) openForm(p);
+          return;
+        }
+        const delBtn = e.target.closest("button[data-delete]");
+        if (delBtn) {
+          const p = allProducts.find(function (x) {
+            return x.id == delBtn.dataset.delete;
+          });
+          if (p) openDelete(p);
+          return;
+        }
+        const adjBtn = e.target.closest("button[data-adjust]");
+        if (adjBtn) {
+          openAdjust(adjBtn.dataset.adjust, adjBtn.dataset.size || null);
+          return;
+        }
+        const stepBtn = e.target.closest("button[data-variant]");
+        if (!stepBtn) return;
+        const found = findVariant(stepBtn.dataset.variant);
+        if (!found) return;
+        const delta = Number(stepBtn.dataset.delta);
+        try {
+          await patchStock(found.variant.id, delta);
+          const label = found.variant.size_label
+            ? " (" + found.variant.size_label + ")"
+            : "";
+          showToast(
+            found.product.name + label + ": " + (delta > 0 ? "+" : "") + delta,
+            function () {
+              patchStock(found.variant.id, -delta).then(loadProduct);
+              showToast("Perubahan dibatalkan.");
+            },
+          );
+          loadProduct();
+        } catch (err) {
+          showError("Gagal ubah stok.");
+        }
+      });
+
+      // ================= Event: header =================
+      $("search").addEventListener("input", render);
+
+      $("filters").addEventListener("click", function (e) {
+        const btn = e.target.closest("button[data-filter]");
+        if (!btn) return;
+        activeFilter = btn.dataset.filter;
+        document.querySelectorAll("#filters button").forEach(function (b) {
+          b.classList.remove("active");
         });
+        btn.classList.add("active");
+        render();
+      });
+
+      function setViewMode(mode) {
+        viewMode = mode;
+        $("viewList").classList.toggle("active", mode == "list");
+        $("viewGrid").classList.toggle("active", mode == "grid");
+        render();
+      }
+      $("viewList").addEventListener("click", function () {
+        setViewMode("list");
+      });
+      $("viewGrid").addEventListener("click", function () {
+        setViewMode("grid");
+      });
+
+      $("addBtn").addEventListener("click", function () {
+        openForm(null);
+      });
+      $("emptyAdd").addEventListener("click", function () {
+        openForm(null);
+      });
+
+      // ================= Event: dialog form =================
+      $("formCancel").addEventListener("click", closeForm);
+      $("photoBtn").addEventListener("click", function () {
+        $("fPhoto").click();
+      });
+      $("fPhoto").addEventListener("change", function () {
+        formPhotoFile = $("fPhoto").files[0] || null;
+        renderPhotoPreview();
+      });
+      $("fHasSizes").addEventListener("change", syncSizeBox);
+
+      $("presetRow").addEventListener("click", function (e) {
+        const b = e.target.closest("button[data-preset]");
+        if (b) togglePreset(b.dataset.preset);
+      });
+      $("customAdd").addEventListener("click", addCustomSize);
+      $("customSize").addEventListener("keydown", function (e) {
+        if (e.key == "Enter") {
+          e.preventDefault();
+          addCustomSize();
+        }
+      });
+
+      $("sizeList").addEventListener("click", function (e) {
+        const step = e.target.closest("button[data-size-idx]");
+        if (step) {
+          const i = Number(step.dataset.sizeIdx);
+          const d = Number(step.dataset.sizeDelta);
+          formSizes[i].qty = Math.max(0, (Number(formSizes[i].qty) || 0) + d);
+          renderSizeEditor();
+          return;
+        }
+        const rm = e.target.closest("button[data-size-remove]");
+        if (rm) {
+          formSizes.splice(Number(rm.dataset.sizeRemove), 1);
+          renderSizeEditor();
+        }
+      });
+      $("sizeList").addEventListener("input", function (e) {
+        const input = e.target.closest("input[data-size-input]");
+        if (!input) return;
+        const i = Number(input.dataset.sizeInput);
+        formSizes[i].qty = Math.max(0, Number(input.value) || 0);
+        const total = formSizes.reduce(function (a, s) {
+          return a + (Number(s.qty) || 0);
+        }, 0);
+        $("sizeTotal").textContent = total + " pcs";
+      });
+
+      document.querySelectorAll("[data-single]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          const cur = Number($("fSingleStock").value) || 0;
+          $("fSingleStock").value = Math.max(
+            0,
+            cur + Number(b.dataset.single),
+          );
+        });
+      });
+
+      $("addForm").addEventListener("submit", submitForm);
+
+      // ================= Event: dialog atur stok =================
+      $("adjustCancel").addEventListener("click", closeAdjust);
+      $("modeIn").addEventListener("click", function () {
+        adjustMode = "masuk";
+        syncAdjustMode();
+        updateAdjustPreview();
+      });
+      $("modeOut").addEventListener("click", function () {
+        adjustMode = "keluar";
+        syncAdjustMode();
+        updateAdjustPreview();
+      });
+      $("adjustSizes").addEventListener("click", function (e) {
+        const b = e.target.closest("button[data-adjust-size]");
+        if (!b) return;
+        adjustSize = b.dataset.adjustSize;
+        renderAdjustSizes();
+        updateAdjustPreview();
+      });
+      $("adjustQty").addEventListener("input", updateAdjustPreview);
+      document.querySelectorAll("[data-qty]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          $("adjustQty").value = b.dataset.qty;
+          updateAdjustPreview();
+        });
+      });
+      $("adjustApply").addEventListener("click", applyAdjust);
+
+      // ================= Event: dialog hapus =================
+      $("deleteCancel").addEventListener("click", closeDelete);
+      $("deleteConfirm").addEventListener("click", confirmDelete);
+
+      // ================= Event: umum =================
+      // Klik latar gelap modal = tutup. Esc = tutup semua.
+      document.querySelectorAll(".modal").forEach(function (m) {
+        m.addEventListener("click", function (e) {
+          if (e.target == m) m.hidden = true;
+        });
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key != "Escape") return;
+        document.querySelectorAll(".modal").forEach(function (m) {
+          m.hidden = true;
+        });
+        hideToast();
+      });
+
+      // ================= Init =================
+      loadProduct();
     </script>
   </body>
 </html>
