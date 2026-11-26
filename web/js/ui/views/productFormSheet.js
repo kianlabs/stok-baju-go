@@ -1,5 +1,3 @@
-// View: sheet tambah / edit produk (foto, nama, harga, ukuran & stok).
-
 import { $, esc, icon, on, vibrate } from "../dom.js";
 import { number, parseDigits } from "../format.js";
 import { SIZE_PRESETS } from "../../config.js";
@@ -21,7 +19,6 @@ export function createProductFormSheet({ actions, sheets }) {
   let photoFile = null;
   let photoURL = null; // object URL untuk pratinjau foto baru
 
-  // ---------- Render ----------
   function renderPhoto() {
     if (photoURL) URL.revokeObjectURL(photoURL);
     photoURL = photoFile ? URL.createObjectURL(photoFile) : null;
@@ -71,7 +68,6 @@ export function createProductFormSheet({ actions, sheets }) {
     draft = { ...draft, sizes: draft.sizes.map((s, j) => (j === i ? { ...s, qty: Product.toQty(qty) } : s)) };
   };
 
-  // ---------- Foto ----------
   const pickPhoto = () => photoInput.click();
   $("photoPick").addEventListener("click", pickPhoto);
   $("photoChoose").addEventListener("click", pickPhoto);
@@ -86,7 +82,6 @@ export function createProductFormSheet({ actions, sheets }) {
     renderPhoto();
   });
 
-  // ---------- Field ----------
   name.addEventListener("input", () => (draft = { ...draft, name: name.value }));
   price.addEventListener("input", () => {
     const value = parseDigits(price.value);
@@ -94,7 +89,6 @@ export function createProductFormSheet({ actions, sheets }) {
     price.value = value ? number(value) : "";
   });
 
-  // ---------- Ukuran ----------
   on($("sizeModeSeg"), "click", "[data-sizemode]", (b) => {
     draft = { ...draft, hasSizes: b.dataset.sizemode === "on" };
     renderSizes();
@@ -129,7 +123,6 @@ export function createProductFormSheet({ actions, sheets }) {
     renderTotal();
   });
 
-  // ---------- Tanpa ukuran (All size) ----------
   const setSingle = (qty) => {
     draft = { ...draft, singleQty: Product.toQty(qty) };
     renderTotal();
@@ -143,7 +136,6 @@ export function createProductFormSheet({ actions, sheets }) {
   });
   single.addEventListener("input", () => setSingle(single.value));
 
-  // ---------- Simpan ----------
   formEl.addEventListener("submit", async (e) => {
     e.preventDefault();
     const invalid = Product.validateDraft(draft);

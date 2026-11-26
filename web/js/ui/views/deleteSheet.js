@@ -1,5 +1,3 @@
-// View: konfirmasi hapus produk.
-
 import { $ } from "../dom.js";
 import { totalOf } from "../../domain/product.js";
 

@@ -1,5 +1,3 @@
-// View: bar atas — status sinkron & tombol muat ulang.
-
 import { $ } from "../dom.js";
 import { timeHM } from "../format.js";
 

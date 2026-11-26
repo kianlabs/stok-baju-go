@@ -16,11 +16,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Println(err)
+		}
+	}()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "ok")
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {	
+		if _, err := fmt.Fprint(w, "ok"); err != nil {
+			log.Println(err)
+		}
+
 	})
 	mux.HandleFunc("GET /api/products", listProductsHandler(db))
 	mux.HandleFunc("POST /api/products", createProductHandler(db))

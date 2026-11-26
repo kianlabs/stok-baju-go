@@ -1,7 +1,3 @@
-// Application: use case (apa yang bisa dilakukan pengguna).
-// Menggabungkan domain + repository + store. Tidak menyentuh DOM;
-// pesan ke pengguna lewat `notifier` yang di-inject dari main.js.
-
 import * as Product from "../domain/product.js";
 import { UNDO_WINDOW_MS } from "../config.js";
 
@@ -24,7 +20,6 @@ export function createActions({ store, repo, prefs, notifier }) {
   const setLocalStock = (variantId, stock) =>
     store.set((s) => ({ products: Product.withVariantStock(s.products, variantId, stock) }));
 
-  // ---------- Muat data ----------
   async function load() {
     if (store.get().loading) return;
     store.set({ loading: true });
@@ -43,7 +38,6 @@ export function createActions({ store, repo, prefs, notifier }) {
     }
   }
 
-  // ---------- Tampilan daftar ----------
   const setQuery = (query) => store.set({ query });
   function setFilter(filter) {
     prefs.saveFilter(filter);
@@ -57,7 +51,6 @@ export function createActions({ store, repo, prefs, notifier }) {
   const closeDetail = () => store.set({ detailId: null });
   const setOnline = (online) => store.set({ online });
 
-  // ---------- Stok +/− (optimistic, undo digabung) ----------
   async function changeStock(variantId, delta, { undoable = true } = {}) {
     const found = Product.findVariant(store.get().products, variantId);
     if (!found) return;
@@ -103,7 +96,6 @@ export function createActions({ store, repo, prefs, notifier }) {
     });
   }
 
-  // ---------- Atur jumlah: masuk / keluar / opname ----------
   async function adjustStock(variantId, mode, qty) {
     const found = Product.findVariant(store.get().products, variantId);
     if (!found) return false;
@@ -133,7 +125,6 @@ export function createActions({ store, repo, prefs, notifier }) {
     return true;
   }
 
-  // ---------- Simpan produk (lempar error untuk ditampilkan di form) ----------
   async function saveProduct({ id, draft, photoFile }) {
     const invalid = Product.validateDraft(draft);
     if (invalid) throw new Error(invalid);
@@ -145,7 +136,6 @@ export function createActions({ store, repo, prefs, notifier }) {
     load();
   }
 
-  // ---------- Hapus produk (dengan undo) ----------
   async function deleteProduct(id) {
     const product = store.get().products.find((p) => p.id === id);
     if (!product) return false;

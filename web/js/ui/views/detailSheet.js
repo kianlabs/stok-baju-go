@@ -1,5 +1,3 @@
-// View: sheet detail produk — stok per ukuran dengan tombol −/+.
-
 import { $, esc, icon, on, vibrate } from "../dom.js";
 import { rupiah, rupiahShort } from "../format.js";
 import { thumb, statusBadge } from "../components.js";

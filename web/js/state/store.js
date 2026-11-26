@@ -1,5 +1,3 @@
-// State: store kecil yang bisa di-subscribe. Satu sumber kebenaran untuk UI.
-
 export function createStore(initial) {
   let state = initial;
   const listeners = new Set();

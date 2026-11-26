@@ -1,5 +1,3 @@
-// UI: format angka, uang, dan waktu untuk ditampilkan (id-ID).
-
 const nf = new Intl.NumberFormat("id-ID");
 
 export const number = (n) => nf.format(n || 0);

@@ -1,9 +1,5 @@
-// Domain: aturan bisnis produk & stok.
-// Fungsi murni — tidak menyentuh DOM, fetch, atau localStorage.
-
 import { LOW_STOCK, DEFAULT_SIZES } from "../config.js";
 
-// ---------- Status & turunan ----------
 export const STATUS_LABEL = { tersedia: "Tersedia", menipis: "Menipis", habis: "Habis" };
 export const FILTERS = ["semua", "tersedia", "menipis", "habis"];
 
@@ -22,7 +18,6 @@ export function statusOf(p) {
 
 export const toQty = (x) => Math.max(0, Math.floor(Number(x) || 0));
 
-// ---------- Daftar: urut, filter, ringkasan ----------
 export const SORTS = {
   terbaru: { label: "Terbaru", compare: (a, b) => b.id - a.id },
   nama: { label: "Nama A–Z", compare: (a, b) => a.name.localeCompare(b.name, "id") },
@@ -52,7 +47,6 @@ export function summarize(products) {
   return { pcs, value, models: products.length, counts };
 }
 
-// ---------- Varian & stok ----------
 export function findVariant(products, variantId) {
   for (const product of products) {
     const variant = product.variants.find((v) => v.id === variantId);
@@ -61,7 +55,6 @@ export function findVariant(products, variantId) {
   return null;
 }
 
-// Mengembalikan array produk baru dengan stok satu varian diganti.
 export function withVariantStock(products, variantId, stock) {
   return products.map((p) =>
     p.variants.some((v) => v.id === variantId)
@@ -78,7 +71,6 @@ export function nextStock(current, mode, qty) {
   return n;
 }
 
-// ---------- Draft form produk ----------
 export function draftFromProduct(p) {
   if (!p) {
     return {
@@ -119,7 +111,6 @@ export function validateDraft(d) {
   return null;
 }
 
-// Bentuk body yang diterima POST/PUT /api/products
 export function draftToPayload(d, imageURL) {
   return {
     name: d.name.trim(),

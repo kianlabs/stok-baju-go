@@ -1,6 +1,3 @@
-// UI: toast di bawah layar, opsional dengan tombol "Urungkan".
-// Objek ini dipakai sebagai `notifier` oleh lapisan application.
-
 import { $ } from "./dom.js";
 
 export function createToast() {
@@ -9,7 +6,6 @@ export function createToast() {
   const action = $("toastAction");
   let timer = null;
 
-  // Naik di atas footer sheet saat ada bottom sheet terbuka.
   function syncPosition() {
     root.classList.toggle("above-sheet", !!document.querySelector("dialog.sheet[open]"));
   }
@@ -19,7 +15,7 @@ export function createToast() {
     clearTimeout(timer);
   }
 
-  function show(text, { undo } = {}) {
+  function show(text, { undo, duration } = {}) {
     msg.textContent = text;
     action.hidden = !undo;
     action.onclick = () => {
@@ -29,7 +25,7 @@ export function createToast() {
     root.hidden = false;
     syncPosition();
     clearTimeout(timer);
-    timer = setTimeout(dismiss, undo ? 5000 : 2500);
+    timer = setTimeout(dismiss, duration ?? (undo ? 5000 : 2500));
   }
 
   return { show, dismiss, syncPosition };

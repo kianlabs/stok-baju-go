@@ -1,5 +1,3 @@
-// View: pencarian, urutan, daftar produk, dan keadaan kosong.
-
 import { $, esc, icon, on } from "../dom.js";
 import { rupiah } from "../format.js";
 import { thumb } from "../components.js";
@@ -52,7 +50,6 @@ export function createProductList({ store, actions, onOpen, onAdd }) {
 
   search.addEventListener("input", () => actions.setQuery(search.value));
   sort.addEventListener("change", () => actions.setSort(sort.value));
-  $("addBtn").addEventListener("click", () => onAdd());
   on(list, "click", "[data-open]", (el) => onOpen(Number(el.dataset.open)));
   on(empty, "click", "[data-action]", (el) => {
     const a = el.dataset.action;

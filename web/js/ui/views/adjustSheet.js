@@ -1,5 +1,3 @@
-// View: sheet "Atur jumlah" — barang masuk, keluar, atau stok opname.
-
 import { $, esc, on } from "../dom.js";
 import { nextStock } from "../../domain/product.js";
 

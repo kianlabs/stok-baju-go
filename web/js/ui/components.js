@@ -1,5 +1,3 @@
-// UI: potongan HTML kecil yang dipakai lebih dari satu view.
-
 import { esc } from "./dom.js";
 import { initials, hue } from "./format.js";
 import { STATUS_LABEL } from "../domain/product.js";

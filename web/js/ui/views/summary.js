@@ -1,5 +1,3 @@
-// View: kartu ringkasan (pcs, nilai, menipis, habis) + chip filter status.
-
 import { $ } from "../dom.js";
 import { number, rupiahShort } from "../format.js";
 import { summarize } from "../../domain/product.js";

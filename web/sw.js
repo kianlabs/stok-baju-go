@@ -1,10 +1,6 @@
-// Service worker Stok Baju
-// - Tampilan aplikasi (HTML/CSS/JS/ikon): stale-while-revalidate → langsung terbuka, update di latar.
-// - Data API (/api/products…): network-first → kalau offline pakai data terakhir.
-// - Foto produk (/api/uploads/…): cache-first (nama file acak, tidak pernah berubah).
 // Naikkan VERSION setiap kali isi daftar SHELL berubah.
 
-const VERSION = "sb-shell-v2";
+const VERSION = "sb-shell-v3";
 const API_CACHE = "sb-api";
 const IMG_CACHE = "sb-img";
 const SHELL = [
@@ -14,16 +10,18 @@ const SHELL = [
   "/icons/icon.svg",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
-  // Modul JS (lihat web/js/main.js untuk peta lapisannya)
   "/js/main.js",
   "/js/config.js",
   "/js/domain/product.js",
+  "/js/domain/order.js",
   "/js/data/http.js",
   "/js/data/imageCompressor.js",
   "/js/data/productRepository.js",
+  "/js/data/orderRepository.js",
   "/js/state/store.js",
   "/js/state/preferences.js",
   "/js/app/actions.js",
+  "/js/app/orderActions.js",
   "/js/platform/pwa.js",
   "/js/ui/dom.js",
   "/js/ui/format.js",
@@ -37,6 +35,10 @@ const SHELL = [
   "/js/ui/views/adjustSheet.js",
   "/js/ui/views/productFormSheet.js",
   "/js/ui/views/deleteSheet.js",
+  "/js/ui/views/orderList.js",
+  "/js/ui/views/orderFormSheet.js",
+  "/js/ui/views/orderPaymentSheet.js",
+  "/js/ui/views/orderCancelSheet.js",
 ];
 
 self.addEventListener("install", (event) => {
