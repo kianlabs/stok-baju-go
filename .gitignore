@@ -5,3 +5,7 @@ data/
 *.db-shm
 # Binary hasil build
 /stok-baju
+
+# build artifacts
+stok-baju-android
+stok-baju
