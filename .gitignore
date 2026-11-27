@@ -1,5 +1,5 @@
 # Runtime data (jangan di-commit, rutin backup)
-data/
+/data/
 *.db
 *.db-wal
 *.db-shm
@@ -9,3 +9,6 @@ data/
 # build artifacts
 stok-baju-android
 stok-baju
+
+# Local AI agent instructions
+AGENTS.md

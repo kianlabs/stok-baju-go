@@ -13,6 +13,7 @@ import { ORDER_FILTERS } from "./domain/order.js";
 import { $, on } from "./ui/dom.js";
 import { createToast } from "./ui/toast.js";
 import { createSheets } from "./ui/sheets.js";
+import { setupLightbox } from "./ui/lightbox.js";
 import { createAppBar } from "./ui/views/appBar.js";
 import { createSummary } from "./ui/views/summary.js";
 import { createProductList } from "./ui/views/productList.js";
@@ -61,6 +62,8 @@ const orderActions = createOrderActions({
 
 const sheets = createSheets({ onChange: toast.syncPosition });
 const deps = { store, actions, orderActions, sheets };
+
+setupLightbox();
 
 const form = createProductFormSheet(deps);
 const adjust = createAdjustSheet(deps);

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -23,16 +24,37 @@ type createProductRequest struct {
 	Variants []Variant `json:"variants"`
 }
 
+type createOrderRequest struct {
+	CustomerName string `json:"customer_name"`
+	WhatsApp     string `json:"whatsapp"`
+	ProductName  string `json:"product_name"`
+	ImageURL     string `json:"image_url"`
+	Size         string `json:"size"`
+	Quantity     int    `json:"quantity"`
+	Price        int    `json:"price"`
+	KeepDate     string `json:"keep_date"`
+	Fulfillment  string `json:"fulfillment"`
+	Payment      string `json:"payment"`
+	Bank         string `json:"bank"`
+}
+
 type adjustStockRequest struct {
 	Mode  string `json:"mode"`
 	Delta int    `json:"delta"`
 	Stock int    `json:"stock"`
 }
 
+type updatePaymentRequest struct {
+	Payment string `json:"payment"`
+	Bank    string `json:"bank"`
+}
+
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(v)
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		log.Println(err)
+	}
 }
 
 func validateProductRequest(req createProductRequest) error {
@@ -58,6 +80,37 @@ func validateProductRequest(req createProductRequest) error {
 	return nil
 }
 
+func validateOrderRequest(req createOrderRequest) error {
+	if strings.TrimSpace(req.CustomerName) == "" {
+		return errors.New("nama customer tidak boleh kosong")
+	}
+	if strings.TrimSpace(req.WhatsApp) == "" {
+		return errors.New("nomor whatsapp tidak boleh kosong")
+	}
+	if req.Price <= 0 {
+		return errors.New("harga harus lebih dari 0")
+	}
+	if req.Fulfillment != "pickup" && req.Fulfillment != "delivery" {
+		return errors.New("pilih salah satu pickup atau delivery")
+	}
+	if req.Payment == "transfer" && strings.TrimSpace(req.Bank) == "" {
+		return errors.New("bank tidak boleh kosong")
+	}
+	if strings.TrimSpace(req.ProductName) == "" {
+		return errors.New("nama barang tidak boleh kosong")
+	}
+	if strings.TrimSpace(req.KeepDate) == "" {
+		return errors.New("tanggal keep tidak boleh kosong")
+	}
+	if req.Quantity < 1 {
+		return errors.New("jumlah keep minimal 1")
+	}
+	if req.Payment != "unpaid" && req.Payment != "transfer" && req.Payment != "cash" {
+		return errors.New("status lunas tidak valid")
+	}
+	return nil
+}
+
 func listProductsHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		products, err := ListProducts(db)
@@ -65,7 +118,6 @@ func listProductsHandler(db *sql.DB) http.HandlerFunc {
 			writeJSON(w, http.StatusInternalServerError, map[string]any{"success": false, "error": err.Error()})
 			return
 		}
-
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "data": products})
 	}
 }
@@ -208,6 +260,201 @@ func adjustStockHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+func listOrdersHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		orders, err := ListOrders(db)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "data": orders})
+	}
+}
+
+func getOrderHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.PathValue("id")
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		o, err := GetOrder(db, id)
+		if err != nil {
+			writeJSON(w, http.StatusNotFound, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "data": o})
+	}
+}
+
+func createOrderHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req createOrderRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		if err := validateOrderRequest(req); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		if req.Payment != "transfer" {
+			req.Bank = ""
+		}
+		o := Order{
+			CustomerName: req.CustomerName,
+			WhatsApp:     req.WhatsApp,
+			ProductName:  req.ProductName,
+			ImageURL:     req.ImageURL,
+			Size:         req.Size,
+			Quantity:     req.Quantity,
+			Price:        req.Price,
+			KeepDate:     req.KeepDate,
+			Fulfillment:  req.Fulfillment,
+			Payment:      req.Payment,
+			Bank:         req.Bank,
+		}
+		id, err := CreateOrder(db, o)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		saved, err := GetOrder(db, id)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusCreated, map[string]any{"success": true, "data": saved})
+	}
+}
+
+func updateOrderHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.PathValue("id")
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		var req createOrderRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		if err := validateOrderRequest(req); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		_, err = GetOrder(db, id)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				writeJSON(w, http.StatusNotFound, map[string]any{"success": false, "error": "pesanan tidak ditemukan"})
+				return
+			}
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		if req.Payment != "transfer" {
+			req.Bank = ""
+		}
+		o := Order{
+			CustomerName: req.CustomerName,
+			WhatsApp:     req.WhatsApp,
+			ProductName:  req.ProductName,
+			ImageURL:     req.ImageURL,
+			Size:         req.Size,
+			Quantity:     req.Quantity,
+			Price:        req.Price,
+			KeepDate:     req.KeepDate,
+			Fulfillment:  req.Fulfillment,
+			Payment:      req.Payment,
+			Bank:         req.Bank,
+		}
+		if err := UpdateOrder(db, id, o); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		saved, err := GetOrder(db, id)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "data": saved})
+	}
+}
+
+func deleteOrderHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.PathValue("id")
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		_, err = GetOrder(db, id)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				writeJSON(w, http.StatusNotFound, map[string]any{"success": false, "error": "pesanan tidak ditemukan"})
+				return
+			}
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		if err := DeleteOrder(db, id); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "data": map[string]any{"id": id}})
+	}
+}
+
+func updateOrderPaymentHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.PathValue("id")
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		var req updatePaymentRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		if req.Payment != "unpaid" && req.Payment != "transfer" && req.Payment != "cash" {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"success": false, "error": "status lunas tidak valid"})
+			return
+		}
+		if req.Payment == "transfer" && strings.TrimSpace(req.Bank) == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"success": false, "error": "bank tidak boleh kosong"})
+			return
+		}
+		_, err = GetOrder(db, id)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				writeJSON(w, http.StatusNotFound, map[string]any{"success": false, "error": "pesanan tidak ditemukan"})
+				return
+			}
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		if req.Payment != "transfer" {
+			req.Bank = ""
+		}
+		if err := UpdateOrderPayment(db, id, req.Payment, req.Bank); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		saved, err := GetOrder(db, id)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"success": false, "error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "data": saved})
+	}
+}
+
 func uploadImageHandler(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 5<<20)
 	if err := r.ParseMultipartForm(5 << 20); err != nil {
@@ -219,7 +466,7 @@ func uploadImageHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"success": false, "error": "tidak ada file photo"})
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
@@ -247,11 +494,11 @@ func uploadImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	name := hex.EncodeToString(b) + ext
-	if err := os.MkdirAll("data/uploads", 0755); err != nil {
+	if err := os.MkdirAll("data/uploads", 0o755); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{"success": false, "error": "gagal buat folder upload"})
 		return
 	}
-	if err := os.WriteFile(filepath.Join("data/uploads", name), data, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join("data/uploads", name), data, 0o644); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{"success": false, "error": "gagal simpan file"})
 		return
 	}
@@ -273,5 +520,7 @@ func deletePhotoFile(imageURL string) {
 		return
 	}
 	name := strings.TrimPrefix(imageURL, "/api/uploads/")
-	os.Remove(filepath.Join("data/uploads", name))
+	if err := os.Remove(filepath.Join("data/uploads", name)); err != nil {
+		log.Println(err)
+	}
 }

@@ -476,6 +476,17 @@
       </div>
     </dialog>
 
+    <!-- ===== Lightbox: perbesar foto ===== -->
+    <dialog class="lightbox" id="photoLightbox" aria-label="Perbesar foto">
+      <div class="lightbox-inner">
+        <button class="lightbox-close" type="button" data-lightbox-close aria-label="Tutup foto">
+          <svg class="ic"><use href="#i-x" /></svg>
+        </button>
+        <img id="lightboxImg" src="" alt="" />
+        <p id="lightboxCaption"></p>
+      </div>
+    </dialog>
+
     <!-- ===== Toast ===== -->
     <div class="toast" id="toast" role="status" hidden>
       <span id="toastMsg"></span>

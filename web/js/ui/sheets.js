@@ -3,7 +3,7 @@
 // di Android menutup sheet, bukan keluar dari aplikasi.
 // Saat sheet ditutup, dialog menerima event "sheet:closed".
 
-const CLOSE_MS = 170;
+const CLOSE_MS = 200;
 
 export function createSheets({ onChange = () => {} } = {}) {
   const stack = [];

@@ -1,6 +1,6 @@
 // Naikkan VERSION setiap kali isi daftar SHELL berubah.
 
-const VERSION = "sb-shell-v3";
+const VERSION = "sb-shell-v4";
 const API_CACHE = "sb-api";
 const IMG_CACHE = "sb-img";
 const SHELL = [
@@ -28,6 +28,7 @@ const SHELL = [
   "/js/ui/components.js",
   "/js/ui/toast.js",
   "/js/ui/sheets.js",
+  "/js/ui/lightbox.js",
   "/js/ui/views/appBar.js",
   "/js/ui/views/summary.js",
   "/js/ui/views/productList.js",

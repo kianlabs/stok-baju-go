@@ -23,7 +23,7 @@ function detailHTML(p) {
   const sizesAvailable = p.has_sizes ? `${p.variants.length - Product.emptySizeCount(p)}/${p.variants.length}` : "—";
   return `
     <div class="d-head">
-      ${thumb(p, "lg")}
+      ${thumb(p, "lg", { zoom: true })}
       <div>
         <h2>${esc(p.name)}</h2>
         <p class="muted">${rupiah(p.price)}</p>

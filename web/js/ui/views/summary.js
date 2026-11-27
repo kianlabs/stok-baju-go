@@ -35,6 +35,9 @@ export function createSummary({ store, actions }) {
       b.setAttribute("aria-selected", String(f === s.filter));
       b.querySelector("span").textContent = s.loaded ? sum.counts[f] : "";
     });
+    document.querySelectorAll("button.stat[data-filter]").forEach((b) => {
+      b.classList.toggle("on", b.dataset.filter === s.filter);
+    });
   }
 
   store.subscribe(render);

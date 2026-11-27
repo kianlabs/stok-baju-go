@@ -1,62 +1,72 @@
+// View: tab Pesanan — ringkasan, cari, filter (Semua/Belum diambil/Belum bayar), daftar pesanan rapi.
+
 import { $, esc, icon, on } from "../dom.js";
 import { number, rupiah, rupiahShort } from "../format.js";
 import { thumb } from "../components.js";
 import * as Order from "../../domain/order.js";
 
-function paymentBadgeClass(payment) {
-  return payment === "unpaid" ? "menipis" : "tersedia";
-}
-
-function orderCardHTML(o, products) {
+function orderRowHTML(o, products) {
   const total = Order.orderTotal(o);
   const waHref = Order.whatsappUrl(o);
   const size = Order.orderSizeLabel(o);
   const payText = Order.paymentBadgeText(o);
-  const payCls = paymentBadgeClass(o.payment);
-  const fulfillText = Order.FULFILLMENT_LABEL[o.fulfillment] || Order.FULFILLMENT_LABEL.pickup;
-  const fulfillIcon = o.fulfillment === "delivery" ? "truck" : "store";
+  const isUnpaid = o.payment === "unpaid";
+  const fulfillText = o.fulfillment === "delivery" ? "Dikirim" : "Ambil toko";
   const photo = Order.resolveOrderImage(o, products);
+  const qtyText = o.quantity > 1 ? `${size} × ${o.quantity}` : size;
 
-  return `<li class="order-card">
-    <div class="order-top">
-      <div class="order-customer">
-        <span class="order-name">${esc(o.customer_name)}</span>
-        <span class="order-date">${icon("calendar")} ${esc(Order.formatKeepDate(o.keep_date))}</span>
-      </div>
-      <div class="order-total">
-        <b>${rupiah(total)}</b>
-        <small>${o.quantity} × ${rupiah(o.price)}</small>
+  return `<li class="order-row">
+    <div class="order-main">
+      ${thumb({ name: o.product_name, image_url: photo }, "sm", { zoom: true })}
+      <div class="order-info">
+        <div class="order-head">
+          <span class="order-name">${esc(o.customer_name)}</span>
+          <b class="order-price">${rupiah(total)}</b>
+        </div>
+        <div class="order-sub">
+          <span class="order-item-name">${esc(o.product_name)} · ${esc(qtyText)}</span>
+          <span class="order-date">${esc(Order.formatKeepDate(o.keep_date))}</span>
+        </div>
+        <div class="order-status-line">
+          <span class="pay-state ${isUnpaid ? "unpaid" : "paid"}"><i class="dot"></i>${esc(payText)}</span>
+          <span class="order-fulfill">· ${esc(fulfillText)}</span>
+        </div>
       </div>
     </div>
-    <div class="order-product">
-      ${thumb({ name: o.product_name, image_url: photo }, "sm")}
-      <div class="order-product-info">
-        <span class="order-item-name">${esc(o.product_name)}</span>
-        <span class="sz">${esc(size)}<b>×${o.quantity}</b></span>
-      </div>
-    </div>
-    <div class="order-badges">
-      <span class="badge neutral">${icon(fulfillIcon)} ${esc(fulfillText)}</span>
-      <span class="badge ${payCls}">${esc(payText)}</span>
-    </div>
-    <div class="order-actions">
-      <a class="btn ghost sm order-wa" href="${esc(waHref)}" target="_blank" rel="noopener noreferrer" aria-label="Chat WhatsApp ${esc(o.customer_name)}">
+    <div class="order-bar">
+      <a class="act-btn wa" href="${esc(waHref)}" target="_blank" rel="noopener noreferrer" aria-label="Chat WhatsApp ${esc(o.customer_name)}">
         ${icon("message")} WA
       </a>
-      <button class="btn ghost sm grow" type="button" data-order-pay="${o.id}">
-        ${icon("wallet")} Bayar
+      <button class="act-btn" type="button" data-order-pay="${o.id}">
+        ${icon("wallet")} ${isUnpaid ? "Tandai lunas" : "Ubah bayar"}
       </button>
-      <button class="btn ghost sm icon-only" type="button" data-order-edit="${o.id}" aria-label="Edit pesanan ${esc(o.customer_name)}">
+      <span class="order-bar-spacer"></span>
+      <button class="act-btn icon-only" type="button" data-order-edit="${o.id}" aria-label="Edit pesanan ${esc(o.customer_name)}">
         ${icon("edit")}
       </button>
-      <button class="btn ghost sm bad-btn" type="button" data-order-cancel="${o.id}">
+      <button class="act-btn danger-text" type="button" data-order-cancel="${o.id}">
         Batal
       </button>
     </div>
   </li>`;
 }
 
+const ORDER_SKELETON = `<li class="order-row skeleton">
+  <div class="order-main">
+    <span class="thumb sm"></span>
+    <div class="order-info">
+      <span class="line" style="width:52%"></span>
+      <span class="line" style="width:74%;margin-top:6px"></span>
+      <span class="line" style="width:36%;margin-top:6px"></span>
+    </div>
+  </div>
+</li>`;
+
 function emptyHTML(s) {
+  if (s.ordersError && !s.orders.length) {
+    return `<h3>Tidak bisa memuat pesanan</h3><p>${esc(s.ordersError)}</p>
+      <button class="btn ghost" type="button" data-order-action="retry">Coba lagi</button>`;
+  }
   if (!s.orders.length) {
     return `<h3>Belum ada pesanan</h3><p>Catat pesanan keep customer supaya stok dan pembayaran tetap rapi.</p>
       <button class="btn primary" type="button" data-order-action="add">${icon("plus")} Tambah pesanan</button>`;
@@ -99,6 +109,7 @@ export function createOrderList({ store, orderActions, onAdd, onEdit, onPay, onC
   on(empty, "click", "[data-order-action]", (el) => {
     const a = el.dataset.orderAction;
     if (a === "add") onAdd();
+    if (a === "retry") orderActions.load();
     if (a === "reset") {
       orderActions.setQuery("");
       orderActions.setFilter("semua");
@@ -127,9 +138,19 @@ export function createOrderList({ store, orderActions, onAdd, onEdit, onPay, onC
       b.setAttribute("aria-selected", String(f === s.orderFilter));
       b.querySelector("span").textContent = sum.counts[f];
     });
+    document.querySelectorAll("button.stat[data-order-filter]").forEach((b) => {
+      b.classList.toggle("on", b.dataset.orderFilter === s.orderFilter);
+    });
+
+    if (!s.ordersLoaded) {
+      list.innerHTML = ORDER_SKELETON.repeat(4);
+      $("orderResultCount").textContent = "";
+      empty.hidden = true;
+      return;
+    }
 
     const items = Order.visibleOrders(s.orders, { query: s.orderQuery, filter: s.orderFilter });
-    list.innerHTML = items.map((o) => orderCardHTML(o, s.products)).join("");
+    list.innerHTML = items.map((o) => orderRowHTML(o, s.products)).join("");
     $("orderResultCount").textContent = s.orders.length ? `${items.length} pesanan` : "";
 
     empty.hidden = items.length > 0;

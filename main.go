@@ -23,7 +23,7 @@ func main() {
 	}()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {	
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := fmt.Fprint(w, "ok"); err != nil {
 			log.Println(err)
 		}
@@ -34,6 +34,12 @@ func main() {
 	mux.HandleFunc("GET /api/products/{id}", getProductHandler(db))
 	mux.HandleFunc("PUT /api/products/{id}", updateProductHandler(db))
 	mux.HandleFunc("DELETE /api/products/{id}", deleteProductHandler(db))
+	mux.HandleFunc("GET /api/orders", listOrdersHandler(db))
+	mux.HandleFunc("POST /api/orders", createOrderHandler(db))
+	mux.HandleFunc("GET /api/orders/{id}", getOrderHandler(db))
+	mux.HandleFunc("PUT /api/orders/{id}", updateOrderHandler(db))
+	mux.HandleFunc("DELETE /api/orders/{id}", deleteOrderHandler(db))
+	mux.HandleFunc("PATCH /api/orders/{id}/payment", updateOrderPaymentHandler(db))
 	mux.HandleFunc("PATCH /api/variants/{id}/stock", adjustStockHandler(db))
 	mux.HandleFunc("POST /api/upload", uploadImageHandler)
 	mux.HandleFunc("GET /api/uploads/{filename}", serveUploadHandler)

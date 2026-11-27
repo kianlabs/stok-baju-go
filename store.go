@@ -27,8 +27,25 @@ type Variant struct {
 	SortOrder int     `json:"sort_order"`
 }
 
+type Order struct {
+	ID           int    `json:"id"`
+	CustomerName string `json:"customer_name"`
+	WhatsApp     string `json:"whatsapp"`
+	ProductName  string `json:"product_name"`
+	ImageURL     string `json:"image_url"`
+	Size         string `json:"size"`
+	Quantity     int    `json:"quantity"`
+	Price        int    `json:"price"`
+	KeepDate     string `json:"keep_date"`
+	Fulfillment  string `json:"fulfillment"`
+	Payment      string `json:"payment"`
+	Bank         string `json:"bank"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
+}
+
 func openStore() (*sql.DB, error) {
-	err := os.MkdirAll("data", 0755)
+	err := os.MkdirAll("data", 0o755)
 	if err != nil {
 		return nil, err
 	}
@@ -67,6 +84,25 @@ func openStore() (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS orders (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  customer_name TEXT NOT NULL,
+  whatsapp TEXT NOT NULL,
+  product_name TEXT NOT NULL,
+  image_url TEXT NOT NULL DEFAULT '',
+  size TEXT NOT NULL DEFAULT '',
+  quantity INTEGER NOT NULL DEFAULT 1,
+  price INTEGER NOT NULL DEFAULT 0,
+  keep_date TEXT NOT NULL,
+  fulfillment TEXT NOT NULL DEFAULT 'pickup',
+  payment TEXT NOT NULL DEFAULT 'unpaid',
+  bank TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);`)
+	if err != nil {
+		return nil, err
+	}
 	return db, nil
 }
 
@@ -75,11 +111,11 @@ func CreateProduct(db *sql.DB, p Product, variants []Variant) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	now := time.Now().Format(time.RFC3339)
 	res, err := tx.Exec(`INSERT INTO products (name, price, image_url, has_sizes, created_at, updated_at)
-	    VALUES (?, ?, ?, ?, ?, ?)`, p.Name, p.Price, p.ImageURL, p.HasSizes, now, now)
+    VALUES (?, ?, ?, ?, ?, ?)`, p.Name, p.Price, p.ImageURL, p.HasSizes, now, now)
 	if err != nil {
 		return 0, err
 	}
@@ -105,7 +141,7 @@ func ListProducts(db *sql.DB) ([]Product, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []Product
 	for rows.Next() {
@@ -132,7 +168,7 @@ func GetProduct(db *sql.DB, id int64) (Product, []Variant, error) {
 	if err != nil {
 		return Product{}, nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var variants []Variant
 	for rows.Next() {
@@ -149,12 +185,118 @@ func GetProduct(db *sql.DB, id int64) (Product, []Variant, error) {
 	return p, variants, nil
 }
 
+func ListOrders(db *sql.DB) ([]Order, error) {
+	rows, err := db.Query(`SELECT id, customer_name, whatsapp, product_name, image_url, size, quantity, price, keep_date, fulfillment, payment, bank, created_at, updated_at FROM orders ORDER BY id DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	out := []Order{}
+	for rows.Next() {
+		var o Order
+		if err := rows.Scan(&o.ID, &o.CustomerName, &o.WhatsApp, &o.ProductName, &o.ImageURL, &o.Size, &o.Quantity, &o.Price, &o.KeepDate, &o.Fulfillment, &o.Payment, &o.Bank, &o.CreatedAt, &o.UpdatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, o)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func GetOrder(db *sql.DB, id int64) (Order, error) {
+	var o Order
+	err := db.QueryRow(`SELECT id, customer_name, whatsapp, product_name, image_url, size, quantity, price, keep_date, fulfillment, payment, bank, created_at, updated_at FROM orders WHERE id = ?`, id).Scan(&o.ID, &o.CustomerName, &o.WhatsApp, &o.ProductName, &o.ImageURL, &o.Size, &o.Quantity, &o.Price, &o.KeepDate, &o.Fulfillment, &o.Payment, &o.Bank, &o.CreatedAt, &o.UpdatedAt)
+	if err != nil {
+		return Order{}, err
+	}
+	return o, nil
+}
+
+func CreateOrder(db *sql.DB, o Order) (int64, error) {
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	now := time.Now().Format(time.RFC3339)
+	res, err := tx.Exec(`INSERT INTO orders (customer_name, whatsapp, product_name, image_url, size, quantity, price, keep_date, fulfillment, payment, bank, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, o.CustomerName, o.WhatsApp, o.ProductName, o.ImageURL, o.Size, o.Quantity, o.Price, o.KeepDate, o.Fulfillment, o.Payment, o.Bank, now, now)
+
+	if err != nil {
+		return 0, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+func UpdateOrder(db *sql.DB, id int64, o Order) error {
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	now := time.Now().Format(time.RFC3339)
+	_, err = tx.Exec(`UPDATE orders SET customer_name = ?, whatsapp = ?, product_name = ?, image_url = ?, size = ?, quantity = ?, price = ?, keep_date = ?, fulfillment = ?, payment = ?, bank = ?, updated_at = ? WHERE id = ?`, o.CustomerName, o.WhatsApp, o.ProductName, o.ImageURL, o.Size, o.Quantity, o.Price, o.KeepDate, o.Fulfillment, o.Payment, o.Bank, now, id)
+	if err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func DeleteOrder(db *sql.DB, id int64) error {
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	_, err = tx.Exec(`DELETE FROM orders WHERE id = ?`, id)
+	if err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func UpdateOrderPayment(db *sql.DB, id int64, payment string, bank string) error {
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	now := time.Now().Format(time.RFC3339)
+	_, err = tx.Exec(`UPDATE orders SET payment = ?, bank = ?, updated_at = ? WHERE id = ?`, payment, bank, now, id)
+	if err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func UpdateProduct(db *sql.DB, id int64, p Product, variants []Variant) error {
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	now := time.Now().Format(time.RFC3339)
 	_, err = tx.Exec(`UPDATE products SET name = ?, price = ?, image_url = ?, has_sizes = ?, updated_at = ? WHERE id = ?`, p.Name, p.Price, p.ImageURL, p.HasSizes, now, id)
