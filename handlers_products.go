@@ -1,0 +1,220 @@
+package main
+
+import (
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"strconv"
+)
+
+type createProductRequest struct {
+	Name     string    `json:"name"`
+	Price    int       `json:"price"`
+	ImageURL string    `json:"image_url"`
+	HasSizes bool      `json:"has_sizes"`
+	Variants []Variant `json:"variants"`
+}
+
+func validateProductRequest(req createProductRequest) error {
+	if req.Name == "" || req.Price < 0 {
+		return errors.New("nama tidak boleh kosong atau harga tidak boleh negatif")
+	}
+	if !req.HasSizes && len(req.Variants) != 1 {
+		return errors.New("produk tanpa ukuran harus punya tepat 1 varian")
+	}
+	if req.HasSizes {
+		seen := map[string]bool{}
+		for _, v := range req.Variants {
+			if v.SizeLabel == nil {
+				return errors.New("ukuran tidak boleh kosong")
+			}
+			label := *v.SizeLabel
+			if seen[label] {
+				return errors.New("ukuran tidak boleh duplikat")
+			}
+			seen[label] = true
+		}
+	}
+	return nil
+}
+
+func listProductsHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		products, err := ListProducts(db)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "data": products})
+	}
+}
+
+func getProductHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.PathValue("id")
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		p, variants, err := GetProduct(db, id)
+		if err != nil {
+			writeError(w, http.StatusNotFound, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": true,
+			"data":    map[string]any{"product": p, "variants": variants},
+		})
+	}
+}
+
+func createProductHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req createProductRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if err := validateProductRequest(req); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		p := Product{
+			Name:     req.Name,
+			Price:    req.Price,
+			ImageURL: req.ImageURL,
+			HasSizes: req.HasSizes,
+		}
+		id, err := CreateProduct(db, p, req.Variants)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusCreated, map[string]any{
+			"success": true,
+			"data":    map[string]any{"id": id},
+		})
+	}
+}
+
+func updateProductHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.PathValue("id")
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		var req createProductRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if err := validateProductRequest(req); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		old, _, err := GetProduct(db, id)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				writeError(w, http.StatusNotFound, "produk tidak ditemukan")
+				return
+			}
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		p := Product{
+			Name:     req.Name,
+			Price:    req.Price,
+			ImageURL: req.ImageURL,
+			HasSizes: req.HasSizes,
+		}
+		if err := UpdateProduct(db, id, p, req.Variants); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if old.ImageURL != "" && old.ImageURL != req.ImageURL {
+			deletePhotoFile(old.ImageURL)
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": true,
+			"data":    map[string]any{"id": id},
+		})
+	}
+}
+
+func deleteProductHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.PathValue("id")
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		p, _, err := GetProduct(db, id)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				writeError(w, http.StatusNotFound, "produk tidak ditemukan")
+				return
+			}
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if err := DeleteProduct(db, id); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		deletePhotoFile(p.ImageURL)
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": true,
+			"data":    map[string]any{"id": id},
+		})
+	}
+}
+
+type adjustStockRequest struct {
+	Mode  string `json:"mode"`
+	Delta int    `json:"delta"`
+	Stock int    `json:"stock"`
+}
+
+func adjustStockHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.PathValue("id")
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		var req adjustStockRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if req.Mode != "delta" && req.Mode != "set" {
+			writeError(w, http.StatusBadRequest, "mode harus delta atau set")
+			return
+		}
+		var next int
+		if req.Mode == "delta" {
+			next, err = AdjustStock(db, id, req.Delta, -1)
+		} else {
+			next, err = AdjustStock(db, id, 0, req.Stock)
+		}
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				writeError(w, http.StatusNotFound, "varian tidak ditemukan")
+				return
+			}
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": true,
+			"data":    map[string]any{"id": id, "stock": next},
+		})
+	}
+}
